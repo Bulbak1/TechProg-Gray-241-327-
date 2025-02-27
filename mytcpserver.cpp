@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QCoreApplication>
 #include<QString>
+#include "serverfunctions.h"
 
 MyTcpServer::~MyTcpServer()
 {
@@ -25,12 +26,12 @@ MyTcpServer::MyTcpServer(QObject *parent) : QObject(parent){
 }
 
 void MyTcpServer::slotNewConnection(){
- //   if(server_status==1){
-        mTcpSocket = mTcpServer->nextPendingConnection();
-        mTcpSocket->write("Hello, World!!! I am echo server!\r\n");
-        connect(mTcpSocket, &QTcpSocket::readyRead,this,&MyTcpServer::slotServerRead);
-        connect(mTcpSocket,&QTcpSocket::disconnected,this,&MyTcpServer::slotClientDisconnected);
-   // }
+    //   if(server_status==1){
+    mTcpSocket = mTcpServer->nextPendingConnection();
+    mTcpSocket->write("server start working\r\n");
+    connect(mTcpSocket, &QTcpSocket::readyRead,this,&MyTcpServer::slotServerRead);
+    connect(mTcpSocket,&QTcpSocket::disconnected,this,&MyTcpServer::slotClientDisconnected);
+    // }
 }
 
 void MyTcpServer::slotServerRead(){
@@ -47,7 +48,7 @@ void MyTcpServer::slotServerRead(){
         else
             res.append(array);
     }
-    mTcpSocket->write(res.toUtf8());
+    mTcpSocket->write(parse(res.toUtf8()));
 
 }
 
