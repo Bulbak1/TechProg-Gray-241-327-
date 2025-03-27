@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QCoreApplication>
 #include<QString>
+#include <QDateTime>
 #include "serverfunctions.h"
 
 MyTcpServer::~MyTcpServer()
@@ -26,32 +27,64 @@ MyTcpServer::MyTcpServer(QObject *parent) : QObject(parent){
 }
 
 void MyTcpServer::slotNewConnection(){
+    QTcpSocket* socket = mTcpServer->nextPendingConnection();
     //   if(server_status==1){
-    mTcpSocket = mTcpServer->nextPendingConnection();
-    mTcpSocket->write("server start working\r\n");
-    connect(mTcpSocket, &QTcpSocket::readyRead,this,&MyTcpServer::slotServerRead);
-    connect(mTcpSocket,&QTcpSocket::disconnected,this,&MyTcpServer::slotClientDisconnected);
-    // }
+    if (!socket) return;
+
+    // Генерируем уникальный ключ (IP:порт)
+    QString clientId = QString("%1:%2")
+                           .arg(socket->peerAddress().toString())
+                           .arg(socket->peerPort());
+
+    mTcpSockets.insert(clientId, socket); // Добавляем в QMap
+
+    //лог о новом соединении
+    qDebug() << "Новое подключение: клиент" << clientId
+             << "установлен в" << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+
+    //сообщение клиенту
+    QString welcomeMsg = QString("Добро пожаловать на сервер! Ваш ID: %1\n").arg(clientId);
+    socket->write(welcomeMsg.toUtf8());
+    //подключение сигналов
+    connect(socket, &QTcpSocket::readyRead, this, &MyTcpServer::slotServerRead);
+    connect(socket, &QTcpSocket::disconnected, this, &MyTcpServer::slotClientDisconnected);
+    //}
 }
 
 void MyTcpServer::slotServerRead(){
+    QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket) {
+        qDebug() << "Error: socket is null!";
+        return;
+    }
     QString res = "";
-    while(mTcpSocket->bytesAvailable()>0)
+    QString clientId = QString("%1:%2")
+                           .arg(socket->peerAddress().toString())
+                           .arg(socket->peerPort());
+    while(socket->bytesAvailable()>0)
     {
-        QByteArray array =mTcpSocket->readAll();
-        qDebug()<<array<<"\n";
+        QByteArray array =socket->readAll();
+        qDebug() << "Client:" << clientId << "sent: " << array << "\n";
         if(array=="\x01")
         {
-            mTcpSocket->write(res.toUtf8());
+            socket->write(res.toUtf8());
             res = "";
         }
         else
             res.append(array);
     }
-    mTcpSocket->write(parse(res.toUtf8()));
+    socket->write(parse(res.toUtf8()));
 
 }
 
 void MyTcpServer::slotClientDisconnected(){
-    mTcpSocket->close();
+    QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket) return;
+    QString clientId = QString("%1:%2")
+                           .arg(socket->peerAddress().toString())
+                           .arg(socket->peerPort());
+    // Удаляем сокет из QMap по значению
+    mTcpSockets.remove(mTcpSockets.key(socket));
+    socket->deleteLater();
+    qDebug() << "Клиент" << clientId << "отключился";
 }

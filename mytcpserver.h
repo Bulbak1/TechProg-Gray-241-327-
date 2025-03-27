@@ -20,7 +20,7 @@ public slots:
     void slotServerRead();
 private:
     QTcpServer * mTcpServer;
-    QTcpSocket * mTcpSocket;
+    QMap<QString, QTcpSocket*> mTcpSockets;;
     //int server_status;
 };
 #endif // MYTCPSERVER_H
