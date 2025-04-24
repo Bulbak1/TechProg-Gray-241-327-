@@ -3,7 +3,8 @@
 
 #include <QString>
 #include <QByteArray>
+#include <QTcpSocket>
 
-QByteArray parse(QString input);
+QByteArray parse(QString input, QTcpSocket* socket);
 
 #endif // SERVERFUNCTIONS_H

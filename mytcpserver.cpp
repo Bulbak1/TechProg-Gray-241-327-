@@ -1,7 +1,7 @@
 #include "mytcpserver.h"
 #include <QDebug>
 #include <QCoreApplication>
-#include<QString>
+#include <QString>
 #include <QDateTime>
 #include "serverfunctions.h"
 
@@ -73,8 +73,7 @@ void MyTcpServer::slotServerRead(){
         else
             res.append(array);
     }
-    socket->write(parse(res.toUtf8()));
-
+    socket->write(parse(res.toUtf8(), socket));
 }
 
 void MyTcpServer::slotClientDisconnected(){
