@@ -11,8 +11,7 @@ CONFIG -= app_bundle
 SOURCES += \
         main.cpp \
         mytcpserver.cpp \
-        serverfunctions.cpp \
-        tests/tst_lagrange_test.cpp
+        serverfunctions.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
