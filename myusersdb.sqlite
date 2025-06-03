@@ -1,0 +1,13 @@
+--
+-- File generated with SQLiteStudio v3.3.3 on Âò èþí 3 17:56:59 2025
+--
+-- Text encoding used: System
+--
+PRAGMA foreign_keys = off;
+BEGIN TRANSACTION;
+
+-- Table: users
+CREATE TABLE users (id PRIMARY KEY, username TEXT UNIQUE NOT NULL, password TEXT NOT NULL);
+
+COMMIT TRANSACTION;
+PRAGMA foreign_keys = on;
