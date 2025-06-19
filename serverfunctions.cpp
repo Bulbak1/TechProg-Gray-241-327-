@@ -1,12 +1,10 @@
 #include "serverfunctions.h"
 #include "DatabaseManager.h"
-#include <QtSql/QSqlQuery>
-#include <QtSql/QSqlError>
 #include <QDebug>
 #include <QMap>
 
 double f(double x) {
-    return x * x; // Пример: f(x) = x^2
+    return x * 2 * (x * x + 1);
 }
 
 double parabolaMethod(double a, double b, int n) {
@@ -23,74 +21,53 @@ double parabolaMethod(double a, double b, int n) {
 }
 
 // Состояния клиентов
-static QMap<QTcpSocket*, bool> authenticatedMap;
-static QMap<QTcpSocket*, QString> userMap;
+static QMap<QString, bool> authenticatedMap;
+static QMap<QString, QString> userMap;
 
-QByteArray parse(const QByteArray& request, QTcpSocket* socket) {
+QByteArray parse(const QByteArray& request, const QString userID) {
     QString msg = QString::fromUtf8(request).trimmed();
-    QSqlDatabase db = DatabaseManager::instance().getDatabase();
-    QSqlQuery query(db);
+    qDebug() << "Raw request:" << request;
 
-    if (!authenticatedMap.value(socket, false)) {
-        if (msg == "1") {
-            socket->write("Введите логин:\n");
-            socket->waitForReadyRead(30000);
-            QString login = socket->readAll().trimmed();
-
-            socket->write("Введите пароль:\n");
-            socket->waitForReadyRead(30000);
-            QString pass = socket->readAll().trimmed();
-
-            query.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)");
-
-            query.prepare("INSERT INTO users (username, password) VALUES (:u, :p)");
-            query.bindValue(":u", login);
-            query.bindValue(":p", pass);
-
-            if (query.exec()) {
-                authenticatedMap[socket] = true;
-                userMap[socket] = login;
-                return "Регистрация успешна. Введите f(x)&a&b&n:\n";
-            } else {
-                qDebug() << "Login:" << login << "Pass:" << pass;
-                qDebug() << "addPerson error:"
-                         << query.lastError();
-                return "Ошибка: возможно, пользователь уже существует.\n";
-            }
-        } else if (msg == "2") {
-            socket->write("Введите логин:\n");
-            socket->waitForReadyRead(30000);
-            QString login = socket->readAll().trimmed();
-
-            socket->write("Введите пароль:\n");
-            socket->waitForReadyRead(30000);
-            QString pass = socket->readAll().trimmed();
-
-            query.prepare("SELECT * FROM users WHERE username = :u AND password = :p");
-            query.bindValue(":u", login);
-            query.bindValue(":p", pass);
-
-            if (query.exec() && query.next()) {
-                authenticatedMap[socket] = true;
-                userMap[socket] = login;
-                return "Авторизация успешна. Введите f(x)&a&b&n:\n";
-            } else {
-                return "Неверные данные.\n";
-            }
-        } else {
-            return "Введите 1 — регистрация, 2 — авторизация:\n";
-        }
-    } else {
+    if (!authenticatedMap.value(userID, false)) {
         QStringList parts = msg.split('&');
-        if (parts.size() != 4) return "Формат: f(x)&a&b&n\n";
+        if (parts[0] == "reg") {
+            QString login = parts[1];
+            QString pass = parts[2];
+
+            bool flag = DatabaseManager::instance()->reg(login, pass);
+
+            if (flag) {
+                authenticatedMap[userID] = true;
+                userMap[userID] = login;
+                return QByteArray("sucess");
+            }
+
+            return QByteArray("error");
+        } else if (parts[0] == "auth") {
+            QString login = parts[1];
+            QString pass = parts[2];
+
+            bool flag = DatabaseManager::instance()->auth(login, pass);
+
+            if (flag) {
+                authenticatedMap[userID] = true;
+                userMap[userID] = login;
+                return QByteArray("sucess");
+            }
+            return QByteArray("error");
+        }
+    }else if (msg.split('&')[0] == "f"){
+        QStringList parts = msg.split('&');
+        if (parts.size() != 4) QByteArray("error");
 
         bool ok1, ok2, ok3;
         double a = parts[1].toDouble(&ok1);
         double b = parts[2].toDouble(&ok2);
         int n = parts[3].toInt(&ok3);
-        if (!ok1 || !ok2 || !ok3) return "Ошибка в числах.\n";
+        if (!ok1 || !ok2 || !ok3) QByteArray("error");
 
         double result = parabolaMethod(a, b, n);
-        return QString("Результат интегрирования: %1\n").arg(result).toUtf8();
+        return QByteArray(QString("res %1").arg(result).toUtf8());
     }
+    return QByteArray("");
 }

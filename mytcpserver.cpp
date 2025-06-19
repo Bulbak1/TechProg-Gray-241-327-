@@ -28,8 +28,6 @@ void MyTcpServer::slotNewConnection() {
 
     connect(socket, &QTcpSocket::readyRead, this, &MyTcpServer::slotServerRead);
     connect(socket, &QTcpSocket::disconnected, this, &MyTcpServer::slotClientDisconnected);
-
-    socket->write("Нажмите 1 для регистрации, 2 для атворизации\r\n");
 }
 
 void MyTcpServer::slotServerRead() {
@@ -37,8 +35,8 @@ void MyTcpServer::slotServerRead() {
     if (!socket) return;
 
     QByteArray request = socket->readAll();
-    QByteArray response = parse(request, socket);
-    socket->write(response);
+    QByteArray response = parse(request, socket->peerAddress().toString());
+    qDebug() << response;
 }
 
 void MyTcpServer::slotClientDisconnected() {

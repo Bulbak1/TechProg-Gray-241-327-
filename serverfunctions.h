@@ -4,6 +4,6 @@
 #include <QTcpSocket>
 #include <QByteArray>
 
-QByteArray parse(const QByteArray& request, QTcpSocket* socket);
+QByteArray parse(const QByteArray&, const QString);
 
 #endif // SERVERFUNCTIONS_H
