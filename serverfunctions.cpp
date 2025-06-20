@@ -31,6 +31,7 @@ QByteArray parse(const QByteArray& request, const QString userID) {
     if (!authenticatedMap.value(userID, false)) {
         QStringList parts = msg.split('&');
         if (parts[0] == "reg") {
+            if (parts.size() != 3) return QByteArray("error");
             QString login = parts[1];
             QString pass = parts[2];
 
@@ -44,6 +45,7 @@ QByteArray parse(const QByteArray& request, const QString userID) {
 
             return QByteArray("error");
         } else if (parts[0] == "auth") {
+            if (parts.size() != 3) return QByteArray("error");
             QString login = parts[1];
             QString pass = parts[2];
 
@@ -58,13 +60,13 @@ QByteArray parse(const QByteArray& request, const QString userID) {
         }
     }else if (msg.split('&')[0] == "f"){
         QStringList parts = msg.split('&');
-        if (parts.size() != 4) QByteArray("error");
+        if (parts.size() != 4) return QByteArray("error");
 
         bool ok1, ok2, ok3;
         double a = parts[1].toDouble(&ok1);
         double b = parts[2].toDouble(&ok2);
         int n = parts[3].toInt(&ok3);
-        if (!ok1 || !ok2 || !ok3) QByteArray("error");
+        if (!ok1 || !ok2 || !ok3) return QByteArray("error");
 
         double result = parabolaMethod(a, b, n);
         return QByteArray(QString("res %1").arg(result).toUtf8());
